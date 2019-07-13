@@ -201,37 +201,24 @@ module motor(model=Nema23, size=NemaMedium, dualAxis=false, pos=[0,0,0], orienta
   echo(str("  Motor: Nema",lookup(NemaModel, model),", length= ",length,"mm, dual axis=",dualAxis));
 
   stepperBlack    = BlackPaint;
-  stepperAluminum = Aluminum;
 
   side = lookup(NemaSideSize, model);
 
   cutR = lookup(NemaMountingHoleCutoutRadius, model);
   lip = lookup(NemaMountingHoleLip, model);
-  holeDepth = lookup(NemaMountingHoleDepth, model);
-
-  axleLengthFront = lookup(NemaFrontAxleLength, model);
-  axleLengthBack = lookup(NemaBackAxleLength, model);
-  axleRadius = lookup(NemaAxleDiameter, model) * 0.5;
 
   extrSize = lookup(NemaRoundExtrusionHeight, model);
   extrRad = lookup(NemaRoundExtrusionDiameter, model) * 0.5;
-
-  holeDist = lookup(NemaDistanceBetweenMountingHoles, model) * 0.5;
-  holeRadius = lookup(NemaMountingHoleDiameter, model) * 0.5;
 
   mid = side / 2;
 
   roundR = lookup(NemaEdgeRoundingRadius, model);
 
-  axleFlatDepth = lookup(NemaAxleFlatDepth, model);
-  axleFlatLengthFront = lookup(NemaAxleFlatLengthFront, model);
-  axleFlatLengthBack = lookup(NemaAxleFlatLengthBack, model);
-
   {
     translate(pos) rotate(orientation) {
       translate([-mid, -mid, 0]) 
         color(stepperBlack)
-        difference() {          
+        difference() {
           cube(size=[side, side, length + extrSize]);
  
           // Corner cutouts
@@ -261,52 +248,75 @@ module motor(model=Nema23, size=NemaMedium, dualAxis=false, pos=[0,0,0], orienta
           }
 
           // Bolt holes
-          color(stepperAluminum, $fs=holeRadius/8) {
-            translate([mid+holeDist,mid+holeDist,-1*mm]) cylinder(h=holeDepth+1*mm, r=holeRadius);
-            translate([mid-holeDist,mid+holeDist,-1*mm]) cylinder(h=holeDepth+1*mm, r=holeRadius);
-            translate([mid+holeDist,mid-holeDist,-1*mm]) cylinder(h=holeDepth+1*mm, r=holeRadius);
-            translate([mid-holeDist,mid-holeDist,-1*mm]) cylinder(h=holeDepth+1*mm, r=holeRadius);
-
-          } 
-
-          // Grinded flat
-          color(stepperAluminum) {
-            difference() {
-              translate([-1*mm, -1*mm, -extrSize]) 
-                cube(size=[side+2*mm, side+2*mm, extrSize + 1*mm]);
-              translate([side/2, side/2, -extrSize - 1*mm]) 
-                cylinder(h=4*mm, r=extrRad);
-            }
-          }
-
+          translate([mid, mid, 0])
+            stepper_bolt_holes(model);
         }
+
+      // Grinded flat
+      color(Aluminum) 
+        translate([0,0, -extrSize])
+          cylinder(h=4*mm, r=extrRad);
 
       // Axle
-      translate([0, 0, extrSize-axleLengthFront]) color(stepperAluminum) 
-        difference() {
-                     
-          cylinder(h=axleLengthFront + 1*mm , r=axleRadius, $fs=axleRadius/10);
+      stepper_front_axle(model);
 
-          // Flat
-          if (axleFlatDepth > 0)
-            translate([axleRadius - axleFlatDepth,-5*mm,-extrSize*mm -(axleLengthFront-axleFlatLengthFront)] ) cube(size=[5*mm, 10*mm, axleLengthFront]);
-        }
-
-        if (dualAxis) {
-          translate([0, 0, length+extrSize]) color(stepperAluminum) 
-            difference() {
-                     
-              cylinder(h=axleLengthBack + 0*mm, r=axleRadius, $fs=axleRadius/10);
-
-              // Flat
-              if (axleFlatDepth > 0)
-                translate([axleRadius - axleFlatDepth,-5*mm,(axleLengthBack-axleFlatLengthBack)]) cube(size=[5*mm, 10*mm, axleLengthBack]);
-          }
-
-        }
-
+      if (dualAxis) {
+        stepper_back_axle(model, size);
+      }
     }
   }
+}
+
+module stepper_bolt_holes(model) {
+  holeDist = lookup(NemaDistanceBetweenMountingHoles, model) * 0.5;
+  holeRadius = lookup(NemaMountingHoleDiameter, model) * 0.5;
+  holeDepth = lookup(NemaMountingHoleDepth, model);
+
+  color(Aluminum, $fs=holeRadius/8) {
+    translate([+holeDist,+holeDist,-1*mm]) cylinder(h=holeDepth+1*mm, r=holeRadius);
+    translate([-holeDist,+holeDist,-1*mm]) cylinder(h=holeDepth+1*mm, r=holeRadius);
+    translate([+holeDist,-holeDist,-1*mm]) cylinder(h=holeDepth+1*mm, r=holeRadius);
+    translate([-holeDist,-holeDist,-1*mm]) cylinder(h=holeDepth+1*mm, r=holeRadius);
+  } 
+}
+
+module stepper_front_axle(model) {
+  extrSize = lookup(NemaRoundExtrusionHeight, model);
+  axleRadius = lookup(NemaAxleDiameter, model) * 0.5;
+  axleFlatDepth = lookup(NemaAxleFlatDepth, model);
+
+  axleLengthFront = lookup(NemaFrontAxleLength, model);
+  axleFlatLengthFront = lookup(NemaAxleFlatLengthFront, model);
+
+  translate([0, 0, extrSize-axleLengthFront]) color(Aluminum)
+    difference() {
+
+      cylinder(h=axleLengthFront + 1*mm , r=axleRadius, $fs=axleRadius/10);
+
+      // Flat
+      if (axleFlatDepth > 0)
+        translate([axleRadius - axleFlatDepth,-5*mm,-extrSize*mm -(axleLengthFront-axleFlatLengthFront)] ) cube(size=[5*mm, 10*mm, axleLengthFront]);
+    }
+}
+
+module stepper_back_axle(model, size = NemaMedium) {
+  extrSize = lookup(NemaRoundExtrusionHeight, model);
+  axleRadius = lookup(NemaAxleDiameter, model) * 0.5;
+  axleFlatDepth = lookup(NemaAxleFlatDepth, model);
+
+  axleFlatLengthBack = lookup(NemaAxleFlatLengthBack, model);
+  axleLengthBack = lookup(NemaBackAxleLength, model);
+  length = lookup(size, model);
+
+  translate([0, 0, length+extrSize]) color(Aluminum)
+    difference() {
+
+      cylinder(h=axleLengthBack + 0*mm, r=axleRadius, $fs=axleRadius/10);
+
+      // Flat
+      if (axleFlatDepth > 0)
+        translate([axleRadius - axleFlatDepth,-5*mm,(axleLengthBack-axleFlatLengthBack)]) cube(size=[5*mm, 10*mm, axleLengthBack]);
+    }
 }
 
 module roundedBox(size, edgeRadius) {
