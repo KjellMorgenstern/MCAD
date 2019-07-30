@@ -28,6 +28,18 @@
 
 //----------------------
 
+module column(iWidth)
+{
+	for (i = [0 : $children-1]) 
+		translate([i*iWidth,0]) rotate([0,0,90]) child(i);
+}
+
+module list90(iHeight)
+{
+	for (i = [0 : $children-1]) 
+		translate([0,i*iHeight]) rotate([0,0,90]) child(i);
+}
+
 module list(iHeight)
 {
 	for (i = [0 : $children-1]) 
