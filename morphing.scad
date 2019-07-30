@@ -4,13 +4,13 @@ module morphing_linear(steps = 20) {
     t2 = (i+1)/steps;
     hull() {
       minkowski() {
-          scale(1-t) children(0); 
-          scale(t) children(1); 
-      } 
-      minkowski() { 
-          scale(1-t2) children(0); 
-          scale(t2) children(1); 
-      } 
+          scale(1-t) children(0);
+          scale(t) children(1);
+      }
+      minkowski() {
+          scale(1-t2) children(0);
+          scale(t2) children(1);
+      }
     }
   }
 }
@@ -18,7 +18,6 @@ module morphing_linear(steps = 20) {
 module morphing_cos(steps = 40, direction = [1, 1, 0]) {
   d1 = direction;
   d2 = [1, 1, 1] - d1;
-
   for (i = [0 : steps - 1] ) {
     t = i/steps;
     r11 = acos(t * 2 - 1) / 180;
@@ -28,17 +27,16 @@ module morphing_cos(steps = 40, direction = [1, 1, 0]) {
     r22 = 1 - r21;
     hull() {
       minkowski() {
-          scale(r11 * d1 + (1-t) * d2) children(0); 
-          scale(r12 * d1 + t * d2) children(1); 
-      } 
-      minkowski() { 
-          scale(r21 * d1 + (1-t2) * d2) children(0); 
-          scale(r22 * d1 + t2 * d2) children(1); 
-      } 
+          scale(r11 * d1 + (1-t) * d2) children(0);
+          scale(r12 * d1 + t * d2) children(1);
+      }
+      minkowski() {
+          scale(r21 * d1 + (1-t2) * d2) children(0);
+          scale(r22 * d1 + t2 * d2) children(1);
+      }
     }
   }
 }
-
 
 
 // Note: Usually the origin should be the common center of both children.
@@ -47,6 +45,12 @@ module morphing_cos(steps = 40, direction = [1, 1, 0]) {
 // do not sum up to 1 for each step:
 //   origin * r11 + origin * r12 != origin
 module morphing_bone(steps = 20, origin=[0,0,0], direction = [1, 1, 0], bone = 1.0) {
+  if ($fast) {
+    hull() {
+      children(0);
+      children(1);
+    }
+  } else {
   d1 = direction;
   d2 = [1, 1, 1] - d1;
   for (i = [0 : steps-1] ) {
@@ -60,7 +64,9 @@ module morphing_bone(steps = 20, origin=[0,0,0], direction = [1, 1, 0], bone = 1
     t22 = min(1, bone - bone * t2);
     r21 = 1 - sqrt(1 - (1-t21)*(1-t21));
     r22 = 1 - sqrt(1 - (1-t22)*(1-t22));
-    translate(origin) hull() {
+    translate(origin) 
+    hull()
+    {
       minkowski() {
           scale(r11 * d1 + (1-t1) * d2) translate(-origin) children(0);
           scale(r12 * d1 + t1 * d2) translate(-origin) children(1);
@@ -71,7 +77,95 @@ module morphing_bone(steps = 20, origin=[0,0,0], direction = [1, 1, 0], bone = 1
       }
     }
   }
+  }
 }
+
+
+module morphing_bone_v2(steps = 20, p1, p2, direction = [1, 1, 0], bone = 1.0) {
+  if ($fast) {
+    hull() {
+      translate(p1) children(0);
+      translate(p2) children(1);
+    }
+  } else {
+  origin = (p1 + p2) / 2;
+  d1 = direction;
+  d2 = [1, 1, 1] - d1;
+  for (i = [0 : steps-1] ) {
+    t1 = i/steps;
+    t11 = min(1, bone * t1);
+    t12 = min(1, bone - bone * t1);
+    r11 = 1 - sqrt(1 - (1-t11)*(1-t11));
+    r12 = 1 - sqrt(1 - (1-t12)*(1-t12));
+    t2 = (i+1)/steps;
+    t21 = min(1, bone * t2);
+    t22 = min(1, bone - bone * t2);
+    r21 = 1 - sqrt(1 - (1-t21)*(1-t21));
+    r22 = 1 - sqrt(1 - (1-t22)*(1-t22));
+    translate(origin) 
+    hull()
+    {
+      minkowski() {
+          scale(r11 * d1 + (1-t1) * d2) translate(p1 - origin) children(0);
+          scale(r12 * d1 + t1 * d2) translate(p2 -origin) children(1);
+      }
+      minkowski() {
+          scale(r21 * d1 + (1-t2) * d2) translate(p1 -origin) children(0);
+          scale(r22 * d1 + t2 * d2) translate(p2 -origin) children(1);
+      }
+    }
+  }
+}
+}
+
+// Work in progress: Try to accelerate OpenSCAD rendering of this module
+//
+// module slice_morphing_bone(steps = 20, p1 = [0,0,0], p2, direction = [1, 1, 0], bone = 1.0) {
+  
+//   children(0);
+//   children(1);
+  
+//   origin = (p1 + p2) / 2;
+//   d1 = direction;
+//   d2 = [1, 1, 1] - d1;
+//   for (i = [0 : steps - 1] ) {
+//     t1 = i/steps;
+//     t11 = min(1, bone * t1);
+//     t12 = min(1, bone - bone * t1);
+//     r11 = 1 - sqrt(1 - (1-t11)*(1-t11));
+//     r12 = 1 - sqrt(1 - (1-t12)*(1-t12));
+//     t2 = (i+1)/steps;
+//     t21 = min(1, bone * t2);
+//     t22 = min(1, bone - bone * t2);
+//     r21 = 1 - sqrt(1 - (1-t21)*(1-t21));
+//     r22 = 1 - sqrt(1 - (1-t22)*(1-t22));
+//     translate(origin) hull() {
+//       if (i < 3) {
+//         minkowski() {
+//           scale(r11 * d1 + (1-t1) * d2) translate(-origin) children(0);
+//           scale(r12 * d1 + t1 * d2) translate(-origin) children(1);
+//         }
+//       //   translate(p1 - origin) children(0);
+//       } else
+//       minkowski() {
+//         scale(r11 * d1 + (1-t1) * d2) translate(p1 - origin) rotate([-90,0,0]) linear_extrude(height = 0.1) projection() rotate([90,0,0]) children(0);
+//         scale(r12 * d1 + t1 * d2) translate(p2 - origin ) rotate([-90,0,0]) linear_extrude(height = 0.1) projection() rotate([90,0,0]) children(1);
+//       }
+//       if (i < 3 ) {
+//       minkowski() {
+//           scale(r21 * d1 + (1-t2) * d2) translate(-origin) children(0);
+//           scale(r22 * d1 + t2 * d2) translate(-origin) children(1);
+//       }
+
+//       } else
+//       minkowski() {
+//         scale(r21 * d1 + (1-t2) * d2) translate(p1 - origin) rotate([-90,0,0]) linear_extrude(height = 0.1) projection() rotate([90,0,0]) children(0);
+//         scale(r22 * d1 + t2 * d2) translate(p2 - origin ) rotate([-90,0,0]) linear_extrude(height = 0.1) projection() rotate([90,0,0]) children(1);
+//       }
+//     }
+//   }
+// }
+
 
 // Backward comptibility
 module morphing(steps = 20) {
@@ -83,7 +177,7 @@ module morphing(steps = 20) {
 }
 
 
-module morphing_sqrt(steps = 20, origin=[0,0,0], direction = [1, 1, 0]) {
+module morphing_sqrt(steps = 20, origin=[0,0,0], direction = [1, 1, 0]) { 
   d1 = direction;
   d2 = [1, 1, 1] - d1;
 
@@ -107,10 +201,48 @@ module morphing_sqrt(steps = 20, origin=[0,0,0], direction = [1, 1, 0]) {
   }
 }
 
+module morphing_sqrt_v2(steps = 20, p1, p2, direction = [1, 1, 0]) {
+  if ($fast) {
+    hull() {
+      translate(p1) children(0);
+      translate(p2) children(1);
+    }
+  } else {
+
+    d1 = direction;
+    d2 = [1, 1, 1] - d1;
+
+    for (i = [0 : steps-1] ) {
+      t = i/steps;
+      r11 = 1 - sqrt(1 - (1-t)*(1-t));
+      r12 = 1 - r11;
+      t2 = (i+1)/steps;
+      r21 = 1 - sqrt(1 - (1-t2)*(1-t2));
+      r22 = 1 - r21;
+      origin = (p1 + p2) / 2;
+      translate(origin) hull() {
+        minkowski() {
+          scale(r11 * d1 + (1-t) * d2) translate(p1-origin) children(0);
+          scale(r12 * d1 + t * d2) translate(p2-origin) children(1);
+        }
+        minkowski() {
+          scale(r21 * d1 + (1-t2) * d2) translate(p1-origin) children(0);
+          scale(r22 * d1 + t2 * d2) translate(p2-origin) children(1);
+        }
+      }
+    }
+
+  }
+}
+
 module simplify_morph() {
-  minkowski() {
+  if ($fast) {
     children(0);
-    cube([0,0,0]);
+  } else {
+    minkowski() {
+      children(0);
+      cube([0,0,0]);
+    }
   }
 }
 
@@ -148,7 +280,7 @@ module up(h) {
 
 // //module blub(B) {
 // //  for (i=[0:len(B)-2]) {
-// //    translate([B[i]*2,B[i]*2,0]) difference() { 
+// //    translate([B[i]*2,B[i]*2,0]) difference() {
 // //      cube([B[i+1],B[i+1],B[i+1]]);
 // //      cube([B[i],B[i],B[i]]);
 // //    }
@@ -163,7 +295,7 @@ module up(h) {
 // //    difference() {
 // //      sphere(r=6.01);
 // //      translate([0,3,3]) sphere(r=3.05);
-// //    }   
+// //    }
 // //  }
 // //}
 // //
@@ -186,38 +318,3 @@ module chained_hull() {
     }
   }
 }
-
-
-
-// 42 
-// 7.8 
-// 15.35 
-// 54 
-// 41.5 
-// 38.9 
-// 65.5 
-// 57 
-// 42 
-// 41 
-// 38 
-// 64.7 
-// 48.4 
-
-
-// Bx=-38 
-// By=-7.8 
-// AC=15 
-// CD=50 
-// BD=41.5 
-// BE=39.3 
-// CE=61.9 
-// DF=55.8 
-// BF=40.1 
-// FG=39.4 
-// EG=36.7 
-// GH=65.7 
-// EH=49 
-
-
-// Bx -37.5
-// By -10
